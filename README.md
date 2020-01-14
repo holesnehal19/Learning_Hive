@@ -24,6 +24,14 @@
 | it also has the High level of Abstraction | it has a Low level of Abstraction | has the High level of Abstraction |
 | Comparatively less no. of the line of codes from MapReduce | Comparatively less no. of the line of codes from both MapReduce and Pig |  it has More line of codes |
 
+## difference between hive and hbase
+
+| hive           |  hbase       |
+| ------------- | ------------- |
+| Apache Hive is not a database | Base does support NoSQL database |
+| Hive does support Batch processing | HBase does support real-time data streaming |
+| schema is required | no need of schema |
+
 - optimize Hive Performance :
 ```
 Tez execution engine in hive
@@ -73,3 +81,27 @@ hive -hiveconf hive.root.logger=DEBUG,console
 - Explain Hive Thrift server?
 Thrift is a software framework. Also, it allows clients using languages including Java, C++, Ruby, and many others, to programmatically access Hive remotely.
 
+- How to Write a UDF function in Hive?
+```
+ Basically, following are the steps:
+
+> Create a Java class for the User Defined Function which extends ora.apache.hadoop.hive.sq.exec.UDF and implements more than one evaluate() methods. 
+> Put in your desired logic and you are almost there.
+> Package your Java class into a JAR file
+> Go to Hive CLI, add your JAR, and verify your JARs is in the Hive CLI classpath
+> CREATE TEMPORARY FUNCTION in Hive which points to your Java class
+> Then Use it in Hive SQL.
+```
+- difference between sort by and order by
+1. sort by :
+            It used for large dataset. beacause it has multiple reducers. and it took less amount of time
+2. order by :
+            It used for small dataset. because it hase single reducer and it took more time to execute.
+            
+ - What is the importance of driver in hive
+ It fetches the query from UI and JDBC interfaces to process the query.
+ 
+- How to specify table creator name when creating the table 
+  > using TBLPROPERTIES. TBLPROPERTIES('creator' = 'snehal')
+            
+ 
