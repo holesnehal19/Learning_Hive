@@ -11,7 +11,7 @@
 ## difference between hive and spark sql
 
 
-| SQL           | HQL           |
+| hive           | spark sql    |
 | ------------- | ------------- |
 | first released in the year 2012 | first released in the year 2014 |
 | version 2.3.2 | version 2.1.2 |
