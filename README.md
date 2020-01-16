@@ -103,5 +103,13 @@ Thrift is a software framework. Also, it allows clients using languages includin
  
 - How to specify table creator name when creating the table 
   > using TBLPROPERTIES. TBLPROPERTIES('creator' = 'snehal')
+  
+- Hive Built-In Functions :
+1. collection
+2. conditional
+3. date
+4. mathematical
+5. string
+
             
  
