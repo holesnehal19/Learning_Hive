@@ -88,3 +88,117 @@ metric_count int,
 run_datetime varchar(40))
 """)
 ```
+4. Insert into count analysis table.
+```
+spark.sql(s"""insert into secure_analysis.datalake_rawsink_count_analysis_updated
+select * from (
+select 
+'venmo' as tenant,
+'identity' as domain_name,
+'auth_user' as table_name,
+'class2' as table_type,
+'kc2sd_count',
+(select count(distinct (id,batch_id,dt_last_updated)) from dl_venmo_ss_identity_raw_secure_tables.auth_user_rawsink
+where to_utc_timestamp(from_unixtime(dt_last_updated DIV 1000),'PST') >= '$date1'
+and to_utc_timestamp(from_unixtime(dt_last_updated DIV 1000),'PST') < '$date2' and $finalRangeQuery),
+(select DATE_FORMAT(current_timestamp(),'yyyy-MM-dd HH:mm:ss'))
+
+UNION ALL
+
+select 
+'venmo' as tenant,
+'identity' as domain_name,
+'auth_user' as table_name,
+'class2' as table_type,
+'kc3p_count',
+(select count (distinct (id,message_batch_id,dt_last_updated)) from dl_venmo_ss_identity_streaming_raw_secure_tables.auth_user_rawsink
+where to_utc_timestamp(from_unixtime(dt_last_updated DIV 1000),'PST') >= '$date1'
+and to_utc_timestamp(from_unixtime(dt_last_updated DIV 1000),'PST') < '$date2' and $finalRangeQuery),
+(select DATE_FORMAT(current_timestamp(),'yyyy-MM-dd HH:mm:ss'))
+)
+""").show(500, false)
+```
+Note - first table is filebased and second table is streaming based.
+
+5. insert one more table entry.
+
+```
+spark.sql(s"""insert into secure_analysis.datalake_rawsink_count_analysis_updated
+select * from (
+select 
+'venmo' as tenant,
+'identity' as domain_name,
+'id_number_coll' as table_name,
+'class2' as table_type,
+'kc2sd_count',
+(select count(distinct(_id,batch_id,jsonstring_dt_updated)) from dl_venmo_ss_identity_raw_secure_tables.id_number_coll_rawsink
+where to_utc_timestamp(from_unixtime(jsonstring_dt_updated DIV 1000),'PST') >= '$date1'
+and to_utc_timestamp(from_unixtime(jsonstring_dt_updated DIV 1000),'PST') < '$date2' and $finalRangeQuery),
+(select DATE_FORMAT(current_timestamp(),'yyyy-MM-dd HH:mm:ss'))
+
+UNION ALL
+
+select 
+'venmo' as tenant,
+'identity' as domain_name,
+'id_number_coll' as table_name,
+'class2' as table_type,
+'kc3p_count',
+(select count(distinct(_id,message_batch_id,jsonstring_dt_updated)) from dl_venmo_ss_identity_streaming_raw_secure_tables.id_number_coll_rawsink
+where to_utc_timestamp(from_unixtime(jsonstring_dt_updated DIV 1000),'PST') >= '$date1'
+and to_utc_timestamp(from_unixtime(jsonstring_dt_updated DIV 1000),'PST') < '$date2' and $finalRangeQuery),
+(select DATE_FORMAT(current_timestamp(),'yyyy-MM-dd HH:mm:ss'))
+)
+""")
+```
+6. drop report table.
+```
+spark.sql("""drop table if exists secure_analysis.datalake_rawsink_count_analysis_report_updated""")
+```
+7.  Create report table.
+```
+spark.sql(s"""
+create table if not exists secure_analysis.datalake_rawsink_count_analysis_report_updated(
+tenant varchar(40),
+domain_name varchar(40),
+table_name varchar(40),
+CDM_flag varchar(40),
+table_type varchar(40),
+start_date varchar(40),
+end_date varchar(40),
+count_from varchar(40),
+kc3p_count bigint,
+kc2sd_count bigint,
+difference varchar(40),
+run_date varchar(40))
+""").show(100,false)
+```
+8. Insert into report table.
+```
+spark.sql(s"""insert into secure_analysis.datalake_rawsink_count_analysis_report_updated 
+select distinct * from ( 
+(select 
+    distinct tenant,domain_name,table_name,'Yes',table_type,'$date1','$date2','Rawsink',
+    (select metric_count from secure_analysis.datalake_rawsink_count_analysis_updated where metric_name='kc3p_count' and DATE_FORMAT(run_datetime,'yyyy-MM-dd') = current_date and table_name='auth_user') as kc3p_count,
+    (select metric_count from secure_analysis.datalake_rawsink_count_analysis_updated where metric_name='kc2sd_count' and DATE_FORMAT(run_datetime,'yyyy-MM-dd') = current_date and table_name='auth_user') as kc2sd_count,
+    ((select metric_count from secure_analysis.datalake_rawsink_count_analysis_updated where metric_name='kc3p_count' and table_name='auth_user' and DATE_FORMAT(run_datetime,'yyyy-MM-dd') = current_date) - 
+    (select metric_count from secure_analysis.datalake_rawsink_count_analysis_updated where metric_name='kc2sd_count' and table_name='auth_user' and DATE_FORMAT(run_datetime,'yyyy-MM-dd') = current_date)) as difference,
+    (select DATE_FORMAT(current_timestamp(),'yyyy-MM-dd HH:mm:ss'))
+from 
+    secure_analysis.datalake_rawsink_count_analysis_updated where table_name='auth_user' and DATE_FORMAT(run_datetime,'yyyy-MM-dd') = current_date)
+    
+UNION ALL
+
+(select 
+    distinct tenant,domain_name,table_name,'Yes',table_type,'$date1','$date2','Rawsink',
+    (select metric_count from secure_analysis.datalake_rawsink_count_analysis_updated where metric_name='kc3p_count' and DATE_FORMAT(run_datetime,'yyyy-MM-dd') = current_date and table_name='id_number_coll') as kc3p_count,
+    (select metric_count from secure_analysis.datalake_rawsink_count_analysis_updated where metric_name='kc2sd_count' and DATE_FORMAT(run_datetime,'yyyy-MM-dd') = current_date and table_name='id_number_coll') as kc2sd_count,
+    ((select metric_count from secure_analysis.datalake_rawsink_count_analysis_updated where metric_name='kc3p_count' and table_name='id_number_coll' and DATE_FORMAT(run_datetime,'yyyy-MM-dd') = current_date) - 
+    (select metric_count from secure_analysis.datalake_rawsink_count_analysis_updated where metric_name='kc2sd_count' and table_name='id_number_coll' and DATE_FORMAT(run_datetime,'yyyy-MM-dd') = current_date)) as difference,
+    (select DATE_FORMAT(current_timestamp(),'yyyy-MM-dd HH:mm:ss'))
+from 
+    secure_analysis.datalake_rawsink_count_analysis_updated where table_name='id_number_coll' and DATE_FORMAT(run_datetime,'yyyy-MM-dd') = current_date)
+)
+""").show(100,false)
+```
+9. select count from report table.
